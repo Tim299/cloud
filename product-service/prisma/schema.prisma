@@ -1,6 +1,6 @@
-// schema.prisma
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -9,53 +9,10 @@ datasource db {
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
-  description String
+  description String?
   price       Float
-  stock       Int
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  CartItems   CartItem[]
-  OrderItem   OrderItem[]
-}
-
-model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  name      String
-  password  String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  CartItems CartItem[]
-  Orders    Order[]
-}
-
-model CartItem {
-  id        Int     @id @default(autoincrement())
-  quantity  Int
-  userId    Int
-  productId Int
-  User      User    @relation(fields: [userId], references: [id])
-  Product   Product @relation(fields: [productId], references: [id])
-}
-
-model Order {
-  id         Int         @id @default(autoincrement())
-  total      Float
-  userId     Int
-  User       User        @relation(fields: [userId], references: [id])
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  OrderItems OrderItem[]
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  quantity  Int
-  price     Float
-  orderId   Int
-  productId Int
-  Order     Order   @relation(fields: [orderId], references: [id])
-  Product   Product @relation(fields: [productId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -1,8 +1,8 @@
 
-version: "3.9"  # Version of Docker Compose
+version: "3.9" 
 
 services:
-  # PostgreSQL Database
+
   postgres:
     image: postgres:15
     container_name: postgres
@@ -11,25 +11,25 @@ services:
       POSTGRES_PASSWORD: ecommerce_password
       POSTGRES_DB: ecommerce_db
     ports:
-      - "5432:5432"  # Expose PostgreSQL port
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Persistent storage for database
+      - postgres_data:/var/lib/postgresql/data
 
-  # Product Service
+
   product-service:
     image: tim299/product-service
     container_name: product-service
     ports:
-      - "3001:3000"  # Expose service on a custom port
+      - "3001:3000"
     environment:
       DATABASE_URL: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
     depends_on:
-      - postgres  # Ensure database starts before this service
+      - postgres
     volumes:
-      - ./product-service:/usr/src/app  
-      - /usr/src/app/node_modules 
+      - ./product-service:/app  
     command: npm run dev
-  # Cart Service
+
+
   cart-service:
     image: tim299/cart-service
     container_name: cart-service
@@ -39,17 +39,20 @@ services:
       DATABASE_URL: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
     depends_on:
       - postgres
+    volumes:
+      - ./cart-service:/app  
+
   frontend:
     build:
       context: ./frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app  # Bind local code for live updates
-      - /app/node_modules
+      - ./frontend:/app
+
     environment:
       NODE_ENV: development
-  # Order Service
+
   order-service:
     image: tim299/order-service
     container_name: order-service
@@ -59,17 +62,21 @@ services:
       DATABASE_URL: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
     depends_on:
       - postgres
+    volumes:
+      - ./order-service:/app  
 
-  # API Gateway
+
   api-gateway:
     image: tim299/api-gateway
     container_name: api-gateway
     ports:
-      - "3004:3000"  # Gateway accessible on localhost:3000
+      - "3004:3000"
     depends_on:
       - product-service
       - cart-service
       - order-service
+    volumes:
+      - ./api-gateway:/app  
 
 volumes:
-  postgres_data:  # Persistent volume for database storage
+  postgres_data:
