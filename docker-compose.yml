@@ -17,7 +17,7 @@ services:
 
   # Product Service
   product-service:
-    image: your-dockerhub-username/product-service:latest
+    image: tim299/product-service
     container_name: product-service
     ports:
       - "3001:3000"  # Expose service on a custom port
@@ -25,10 +25,13 @@ services:
       DATABASE_URL: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
     depends_on:
       - postgres  # Ensure database starts before this service
-
+    volumes:
+      - ./product-service:/usr/src/app  
+      - /usr/src/app/node_modules 
+    command: npm run dev
   # Cart Service
   cart-service:
-    image: your-dockerhub-username/cart-service:latest
+    image: tim299/cart-service
     container_name: cart-service
     ports:
       - "3002:3000"
@@ -36,10 +39,19 @@ services:
       DATABASE_URL: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
     depends_on:
       - postgres
-
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app  # Bind local code for live updates
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
   # Order Service
   order-service:
-    image: your-dockerhub-username/order-service:latest
+    image: tim299/order-service
     container_name: order-service
     ports:
       - "3003:3000"
@@ -50,10 +62,10 @@ services:
 
   # API Gateway
   api-gateway:
-    image: your-dockerhub-username/api-gateway:latest
+    image: tim299/api-gateway
     container_name: api-gateway
     ports:
-      - "3000:3000"  # Gateway accessible on localhost:3000
+      - "3004:3000"  # Gateway accessible on localhost:3000
     depends_on:
       - product-service
       - cart-service
