@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 
@@ -7,13 +8,15 @@ const prisma = new PrismaClient();
 app.use(express.json());
 
 app.get('/', async (req, res) => {
-    const products = [
-        { id: 1, name: 'Product 1', price: 10.0 },
-        { id: 2, name: 'Product 2', price: 20.0 }
-    ];
-    res.json(products);
+    console.log("Fetching products");
+    try {
+        const products = await prisma.product.findMany();
+        res.json(products);
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).json({ error: "Failed to fetch products" });
+    }
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Product service running on port ${PORT}`));
