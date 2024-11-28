@@ -20,68 +20,69 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [receipts, setReceipts] = useState<any[]>([]); 
 
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [receiptsError, setReceiptsError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProducts = async () => {
       try {
-        const response = await fetch("http://localhost:3004/products");
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
+        const response = await fetch("http://192.168.49.2:30004/products");
+        if (!response.ok) throw new Error("Failed to fetch products.");
         const data: Product[] = await response.json();
         setProducts(data);
-      } catch (err: any) {
-        setError(err.message);
+        setProductsError(null);
+      } catch (error: any) {
+        setProductsError(error.message);
       }
     };
-    fetchData();
 
+    fetchProducts();
   }, []);
 
-  if (error) {
-    return <div>Error: {error}</div>
-  }
-
-  const fetchReceipts = async () => {
-    try {
-      const response = await fetch("http://localhost:3004/orders/fetch?userId=1");
-      if (!response.ok) {
-        throw new Error("Failed to fetch receipts");
-      }
-      const data = await response.json();
-      setReceipts(data);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
+  // Fetch Cart
   const fetchCart = async () => {
     try {
-      const response = await fetch("http://localhost:3004/cart/fetch?userId=1");
-      if (!response.ok) {
-        throw new Error("Failed to fetch cart");
-      }
+      const response = await fetch("http://192.168.49.2:30004/cart/fetch?userId=1");
+      if (!response.ok) throw new Error("Failed to fetch cart.");
       const data: CartItem[] = await response.json();
 
-      const mappedCart = data.map((cartItem) => {
-        const product = products.find((p) => p.id === cartItem.productId);
-        return product ? { ...product, quantity: cartItem.quantity } : null;
-      }).filter((item): item is Product & { quantity: number } => item !== null);
+      const mappedCart = data
+        .map((cartItem) => {
+          const product = products.find((p) => p.id === cartItem.productId);
+          return product ? { ...product, quantity: cartItem.quantity } : null;
+        })
+        .filter((item): item is Product & { quantity: number } => item !== null);
 
       setCart(mappedCart);
-    } catch (err: any) {
-      setError(err.message);
+      setCartError(null);
+    } catch (error: any) {
+      setCartError(error.message);
     }
   };
+
+  // Fetch Receipts
+  const fetchReceipts = async () => {
+    try {
+      const response = await fetch("http://192.168.49.2:30004/orders/fetch?userId=1");
+      if (!response.ok) throw new Error("Failed to fetch receipts.");
+      const data = await response.json();
+      setReceipts(data);
+      setReceiptsError(null);
+    } catch (error: any) {
+      setReceiptsError(error.message);
+    }
+  };
+
+  // Fetch Cart and Receipts after component mounts
   useEffect(() => {
-    
     fetchCart();
     fetchReceipts();
-  }, []);
+  }, [products]);
 
   const handleAddToCart = async (product: Product) => {
     try {
-      const response = await fetch("http://localhost:3004/add", {
+      const response = await fetch("http://192.168.49.2:30004/add", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -124,7 +125,7 @@ export default function Home() {
   };
   const handleRemoveFromCart = async (productId: number) => {
     try {
-      const response = await fetch("http://localhost:3004/remove", {
+      const response = await fetch("http://192.168.49.2:30004/remove", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -159,7 +160,7 @@ export default function Home() {
 
   const handleCheckout = async () => {
     try {
-      const response = await fetch("http://localhost:3004/checkout", {
+      const response = await fetch("http://192.168.49.2:30004/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -183,12 +184,30 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">E-Commerce Store</h1>
-  
+        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
+          E-Commerce Store
+        </h1>
+
+        {/* Error Notifications */}
+        <div>
+          {productsError && (
+            <p className="text-red-500 text-center">Error loading products: {productsError}</p>
+          )}
+          {cartError && (
+            <p className="text-red-500 text-center">Error loading cart: {cartError}</p>
+          )}
+          {receiptsError && (
+            <p className="text-red-500 text-center">Error loading receipts: {receiptsError}</p>
+          )}
+        </div>
+
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
-            <div key={product.id} className="bg-white shadow-md rounded-lg p-6 flex flex-col justify-between">
+            <div
+              key={product.id}
+              className="bg-white shadow-md rounded-lg p-6 flex flex-col justify-between"
+            >
               <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
               <p className="text-gray-600 mt-2">{product.description}</p>
               <p className="text-lg font-bold text-gray-900 mt-4">${product.price.toFixed(2)}</p>
@@ -201,15 +220,19 @@ export default function Home() {
             </div>
           ))}
         </div>
-  
+
         {/* Cart Section */}
         <div className="mt-12">
           <h2 className="text-3xl font-bold mb-6 text-gray-800">Cart</h2>
           {cart.length > 0 ? (
             <div className="bg-white shadow-md rounded-lg p-6">
+              {/* Cart Items */}
               <ul className="space-y-4">
-                {cart.map((item, index) => (
-                  <li key={index} className="flex justify-between items-center border-b pb-2">
+                {cart.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex justify-between items-center border-b pb-2"
+                  >
                     <div>
                       <p className="text-lg font-semibold text-gray-800">{item.name}</p>
                       <p className="text-gray-600">
@@ -225,6 +248,8 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+
+              {/* Checkout */}
               <div className="text-right mt-4">
                 <button
                   onClick={handleCheckout}
@@ -238,7 +263,7 @@ export default function Home() {
             <p className="text-gray-600">Your cart is empty.</p>
           )}
         </div>
-  
+
         {/* Receipts Section */}
         <div className="mt-12">
           <h2 className="text-3xl font-bold mb-6 text-gray-800">Receipts</h2>
@@ -249,7 +274,9 @@ export default function Home() {
                   key={index}
                   className="bg-white shadow-md rounded-lg p-6 border border-gray-200"
                 >
-                  <p className="text-lg font-semibold text-gray-800">Receipt #{receipt.id}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    Receipt #{receipt.id}
+                  </p>
                   <p className="text-gray-600">Total: ${receipt.total.toFixed(2)}</p>
                   <p className="text-gray-700 font-semibold mt-4">Items:</p>
                   <ul className="mt-2 space-y-2">
