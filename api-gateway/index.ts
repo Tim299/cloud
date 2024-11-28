@@ -13,7 +13,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-
 app.use(
   '/cart/fetch',
   createProxyMiddleware({
@@ -22,21 +21,34 @@ app.use(
   })
 );
 
+app.get("/orders/fetch", async (req, res) => {
+  console.log('Request received for fetching):', req.query);
+  try {
+    const userId = req.query.userId;
+    const response = await fetch(`http://order-service:3000/fetch?userId=${userId}`);
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err:any) {
+    console.error("Error forwarding fetch orders request:", err.message);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
 app.use("/add", async (req: Request, res: Response) => {
   try {
     const forwardedHeaders: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.headers)) {
       if (typeof value === "string") {
-        forwardedHeaders[key] = value; // Add single-value headers
+        forwardedHeaders[key] = value; 
       } else if (Array.isArray(value)) {
-        forwardedHeaders[key] = value.join(", "); // Join array values into a string
+        forwardedHeaders[key] = value.join(", "); 
       }
     }
 
     const response = await fetch("http://cart-service:3000/add", {
       method: "PUT",
-      headers: forwardedHeaders, // Use the converted headers
-      body: JSON.stringify(req.body), // Forward the incoming body
+      headers: forwardedHeaders, 
+      body: JSON.stringify(req.body), 
     });
 
     const data = await response.json();
@@ -47,20 +59,83 @@ app.use("/add", async (req: Request, res: Response) => {
   }
 });
 
+app.use("/remove", async (req: Request, res: Response) => {
+ console.log('Request received for removing from cart:', req.body); 
+  try {
+    const forwardedHeaders: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (typeof value === "string") {
+        forwardedHeaders[key] = value; 
+      } else if (Array.isArray(value)) {
+        forwardedHeaders[key] = value.join(", "); 
+      }
+    }
 
-app.use(
-  '/cart',
-  createProxyMiddleware({
-    target: 'http://cart-service:3000/add',
-    changeOrigin: true,
-    on: {
-      proxyReq: (proxyReq, req) => {
-        const originalUrl = (req as express.Request).originalUrl;
-        console.log(`[Proxy] Forwarding to Product Service: ${originalUrl}`);
-      },
-    },
-  })
-);
+    const response = await fetch("http://cart-service:3000/remove", {
+      method: "DELETE",
+      headers: forwardedHeaders, 
+      body: JSON.stringify(req.body), 
+    });
+
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    console.error("Error in /add route:", error.message);
+    res.status(500).json({ error: "Failed to add item to cart" });
+  }
+});
+
+app.use("/checkout", async (req, res) => {
+  try {
+    const forwardedHeaders: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (typeof value === "string") {
+        forwardedHeaders[key] = value; 
+      } else if (Array.isArray(value)) {
+        forwardedHeaders[key] = value.join(", "); 
+      }
+    }
+
+    const response = await fetch("http://order-service:3000/checkout", {
+      method: "POST",
+      headers: forwardedHeaders, 
+      body: JSON.stringify(req.body), 
+    });
+
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err:any) {
+    console.error("Checkout error:", err.message);
+    res.status(500).json({ error: "Failed to process checkout" });
+  }
+});
+
+
+app.use("/add", async (req: Request, res: Response) => {
+  try {
+    const forwardedHeaders: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (typeof value === "string") {
+        forwardedHeaders[key] = value; 
+      } else if (Array.isArray(value)) {
+        forwardedHeaders[key] = value.join(", "); 
+      }
+    }
+
+    const response = await fetch("http://cart-service:3000/add", {
+      method: "PUT",
+      headers: forwardedHeaders, 
+      body: JSON.stringify(req.body), 
+    });
+
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error: any) {
+    console.error("Error in /add route:", error.message);
+    res.status(500).json({ error: "Failed to add item to cart" });
+  }
+});
+
 
 app.use(
   '/products',
@@ -75,11 +150,6 @@ app.use(
     },
   })
 );
-
-
-
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

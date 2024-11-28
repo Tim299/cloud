@@ -49,7 +49,6 @@ app.put('/add', async (req: any, res: any) => {
   }
 });
 
-// Fetch Cart
 app.get('/fetch', async (req: any, res: any) => {
   const { userId } = req.query;
   console.log('Fetching cart for userId:', userId);
