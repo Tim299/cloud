@@ -17,13 +17,11 @@ app.use((req, res, next) => {
 
 app.put('/add', async (req: any, res: any) => {
   const { userId, productId } = req.body;
-  console.log('Request received for adding to cart:', req.body);
 
   if (!userId || !productId) {
     console.error('Error: Missing userId or productId');
     return res.status(400).json({ error: 'userId and productId are required' });
   }
-
   try {
     const existingCartItem = await prisma.cart.findFirst({
       where: { userId, productId },
@@ -51,13 +49,11 @@ app.put('/add', async (req: any, res: any) => {
 
 app.get('/fetch', async (req: any, res: any) => {
   const { userId } = req.query;
-  console.log('Fetching cart for userId:', userId);
 
   if (!userId) {
     console.error('Error: Missing userId');
     return res.status(400).json({ error: 'userId is required' });
   }
-
   try {
     const cartItems = await prisma.cart.findMany({
       where: { userId: Number(userId) },

@@ -40,7 +40,6 @@ export default function Home() {
     fetchProducts();
   }, []);
 
-  // Fetch Cart
   const fetchCart = async () => {
     try {
       const response = await fetch("http://192.168.49.2:30004/cart/fetch?userId=1");
@@ -61,7 +60,6 @@ export default function Home() {
     }
   };
 
-  // Fetch Receipts
   const fetchReceipts = async () => {
     try {
       const response = await fetch("http://192.168.49.2:30004/orders/fetch?userId=1");
@@ -74,7 +72,6 @@ export default function Home() {
     }
   };
 
-  // Fetch Cart and Receipts after component mounts
   useEffect(() => {
     fetchCart();
     fetchReceipts();
@@ -172,7 +169,6 @@ export default function Home() {
         throw new Error("Failed to checkout");
       }
       fetchReceipts();
-      console.log(receipts)
       setCart([]);
     } catch (err: any) {
       console.error(err.message);
@@ -183,12 +179,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
           E-Commerce Store
         </h1>
 
-        {/* Error Notifications */}
         <div>
           {productsError && (
             <p className="text-red-500 text-center">Error loading products: {productsError}</p>
@@ -201,7 +195,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
             <div
@@ -221,12 +214,10 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Cart Section */}
         <div className="mt-12">
           <h2 className="text-3xl font-bold mb-6 text-gray-800">Cart</h2>
           {cart.length > 0 ? (
             <div className="bg-white shadow-md rounded-lg p-6">
-              {/* Cart Items */}
               <ul className="space-y-4">
                 {cart.map((item) => (
                   <li
@@ -249,7 +240,6 @@ export default function Home() {
                 ))}
               </ul>
 
-              {/* Checkout */}
               <div className="text-right mt-4">
                 <button
                   onClick={handleCheckout}
@@ -264,7 +254,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Receipts Section */}
         <div className="mt-12">
           <h2 className="text-3xl font-bold mb-6 text-gray-800">Receipts</h2>
           {receipts.length > 0 ? (

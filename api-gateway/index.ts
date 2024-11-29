@@ -1,6 +1,5 @@
 import cors from 'cors';
 import express, { Request, Response, NextFunction } from "express";
-import { createProxyMiddleware, RequestHandler } from "http-proxy-middleware";
 
 const app = express();
 app.use(express.json());
@@ -13,13 +12,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.use(
-  '/cart/fetch',
-  createProxyMiddleware({
-    target: 'http://cart-service:3000/fetch',
-    changeOrigin: true,
-  })
-);
+
+app.get('/cart/fetch', async (req, res) => {
+  console.log('Request received for fetching):', req.query);
+  try {
+    const userId = req.query.userId;
+    const response = await fetch(`http://cart-service:3000/fetch?userId=${userId}`);
+    const data = await response.json();
+    res.status(response.status).json(data);
+  }  catch (err: any) {
+    console.error("Error forwarding fetch products request:", err.message);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
 
 app.get("/orders/fetch", async (req, res) => {
   console.log('Request received for fetching):', req.query);
@@ -136,20 +141,16 @@ app.use("/add", async (req: Request, res: Response) => {
   }
 });
 
-
-app.use(
-  '/products',
-  createProxyMiddleware({
-    target: 'http://product-service:3000/',
-    changeOrigin: true,
-    on: {
-      proxyReq: (proxyReq, req) => {
-        const originalUrl = (req as express.Request).originalUrl;
-        console.log(`[Proxy] Forwarding to Product Service: ${originalUrl}`);
-      },
-    },
-  })
-);
+app.get('/products', async (req, res) => {
+  try {
+    const response = await fetch('http://product-service:3000/');
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err: any) {
+    console.error("Error forwarding fetch products request:", err.message);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

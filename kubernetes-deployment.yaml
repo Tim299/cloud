@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
         - name: product-service
-          image: tim299/product-service:20241128234008
+          image: tim299/product-service:20241129100613
           ports:
             - containerPort: 3000
           env:
@@ -131,7 +131,7 @@ spec:
     spec:
       containers:
         - name: cart-service
-          image: tim299/cart-service:20241128234008
+          image: tim299/cart-service:20241129100613
           ports:
             - containerPort: 3000
           env:
@@ -171,7 +171,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: tim299/order-service:20241128234008
+          image: tim299/order-service:20241129100613
           ports:
             - containerPort: 3000
           env:
@@ -211,7 +211,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: tim299/api-gateway:20241128234008
+          image: tim299/api-gateway:20241129100613
           ports:
             - containerPort: 3000
 
@@ -249,7 +249,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: tim299/frontend:20241128234008
+          image: tim299/frontend:20241129100613
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
