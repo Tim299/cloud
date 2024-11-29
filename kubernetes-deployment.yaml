@@ -1,4 +1,3 @@
-# Persistent Volume for PostgreSQL
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -24,7 +23,18 @@ spec:
       storage: 1Gi
 
 ---
-# PostgreSQL Deployment
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  POSTGRES_USER: ZWNvbW1lcmNlX3VzZXI=  
+  POSTGRES_PASSWORD: ZWNvbW1lcmNlX3Bhc3N3b3Jk  
+  POSTGRES_DB: ZWNvbW1lcmNlX2Ri
+  DATABASE_URL: cG9zdGdyZXM6Ly9lY29tbWVyY2VfdXNlcjplY29tbWVyY2VfcGFzc3dvcmRAcG9zdGdyZXM6NTQzMi9lY29tbWVyY2VfZGI=  
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,21 +56,36 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_USER
-              value: ecommerce_user
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
-              value: ecommerce_password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
-              value: ecommerce_db
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1"
       volumes:
         - name: postgres-data
           persistentVolumeClaim:
             claimName: postgres-data
 
 ---
-# PostgreSQL Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -71,16 +96,14 @@ spec:
       targetPort: 5432
   selector:
     app: postgres
-  clusterIP: None # Ensures a headless service for stable DNS
 
 ---
-# Product Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: product-service
 spec:
-  replicas: 1
+  replicas: 2 
   selector:
     matchLabels:
       app: product-service
@@ -96,10 +119,37 @@ spec:
             - containerPort: 3000
           env:
             - name: DATABASE_URL
-              value: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
-
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: DATABASE_URL
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
 ---
-# Product Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: product-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: product-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -114,13 +164,12 @@ spec:
     app: product-service
 
 ---
-# Cart Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cart-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: cart-service
@@ -136,10 +185,37 @@ spec:
             - containerPort: 3000
           env:
             - name: DATABASE_URL
-              value: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
-
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: DATABASE_URL
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
 ---
-# Cart Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cart-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cart-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -154,13 +230,12 @@ spec:
     app: cart-service
 
 ---
-# Order Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: order-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: order-service
@@ -176,10 +251,39 @@ spec:
             - containerPort: 3000
           env:
             - name: DATABASE_URL
-              value: postgres://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: DATABASE_URL
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
 
 ---
-# Order Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: order-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: order-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -194,13 +298,12 @@ spec:
     app: order-service
 
 ---
-# API Gateway Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: api-gateway
@@ -214,9 +317,15 @@ spec:
           image: tim299/api-gateway:20241129100613
           ports:
             - containerPort: 3000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
 
 ---
-# API Gateway Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -232,7 +341,6 @@ spec:
   type: NodePort 
 
 ---
-# Frontend Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -255,7 +363,6 @@ spec:
             - containerPort: 3000
 
 ---
-# Frontend Service
 apiVersion: v1
 kind: Service
 metadata:
